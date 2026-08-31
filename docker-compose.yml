@@ -1,0 +1,58 @@
+services:
+  mktxp:
+    image: ghcr.io/akpw/mktxp:1.2.20
+    container_name: mktxp
+    restart: unless-stopped
+    volumes:
+      - ./mktxp-config:/etc/mktxp
+    # Sin "ports": Prometheus lo scrapea por la red interna de Docker.
+
+  topflows-exporter:
+    build: ./topflows-exporter
+    container_name: mikrotik-topflows
+    restart: unless-stopped
+    environment:
+      MTK_HOST: "${MTK_HOST:?definir MTK_HOST en .env}"
+      MTK_USER: "${MTK_USER:?definir MTK_USER en .env}"
+      MTK_PASSWORD: "${MTK_PASSWORD:?definir MTK_PASSWORD en .env}"
+      MTK_PORT: "${MTK_PORT:-8728}"
+      MTK_USE_SSL: "${MTK_USE_SSL:-false}"
+      MTK_SSL_VERIFY: "${MTK_SSL_VERIFY:-false}"
+      TOP_N: "${TOP_N:-20}"
+      INTERVAL: "${INTERVAL:-15}"
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: prometheus
+    restart: unless-stopped
+    depends_on:
+      - mktxp
+      - topflows-exporter
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=180d"
+    ports:
+      # Solo accesible desde la propia maquina (Prometheus no tiene autenticacion).
+      # Para verlo desde otra PC: tunel SSH o cambiar a "9090:9090" bajo tu responsabilidad.
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?definir GRAFANA_ADMIN_PASSWORD en .env}"
+
+volumes:
+  prometheus-data:
+  grafana-data:

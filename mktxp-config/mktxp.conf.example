@@ -1,0 +1,23 @@
+# Copiar a mktxp.conf (esta ignorado por git) y completar credenciales reales.
+# NUNCA commitear mktxp.conf: contiene usuario y password del router.
+
+[default]
+    enabled = True
+    port = 8728
+    # Para API-SSL (recomendado si el router es remoto): port = 8729 y use_ssl = True
+    use_ssl = False
+    ssl_certificate_verify = False
+    interface = True
+    health = True
+    dhcp = True
+    wireless = True
+    monitor = True
+    route = False
+    firewall = False
+    poe = False
+    netwatch = False
+
+[Router-Principal]
+    hostname = IP_DEL_ROUTER
+    username = mktxp_user
+    password = CAMBIAR_ESTA_PASSWORD

@@ -1,0 +1,121 @@
+{
+  "uid": "mikrotik-topflows",
+  "title": "MikroTik Top Flows",
+  "tags": ["mikrotik"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Tráfico por destino (último intervalo)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 12, "w": 16, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mikrotik_topflows_bps * 8",
+          "legendFormat": "{{dst_address}} ({{protocol}})"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Conexiones activas",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "graphMode": "area",
+        "colorMode": "value"
+      },
+      "targets": [
+        { "refId": "A", "expr": "mikrotik_active_connections", "legendFormat": "conexiones" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Conexiones activas (histórico)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 5 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": { "drawStyle": "line", "lineWidth": 1, "fillOpacity": 10, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        { "refId": "A", "expr": "mikrotik_active_connections", "legendFormat": "conexiones" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Top destinos por bytes acumulados (conexiones vivas ahora)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": { "unit": "bytes" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "dst_address" },
+            "properties": [{ "id": "custom.width", "value": 320 }]
+          }
+        ]
+      },
+      "options": {
+        "sortBy": [{ "displayName": "Bytes", "desc": true }]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(20, sum by (dst_address, protocol) (mikrotik_connection_bytes))",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "Value": "Bytes", "dst_address": "Destino", "protocol": "Protocolo" }
+          }
+        }
+      ]
+    }
+  ]
+}
